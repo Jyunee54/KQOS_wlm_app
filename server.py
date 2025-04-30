@@ -4,12 +4,13 @@ from wlm import *
 
 
 # Define the server host and port
-HOST = '0.0.0.0'  # Localhost
+# HOST = '127.0.0.1'  # Localhost
 # HOST = '192.168.0.7'  # Localhost
+HOST = '161.122.203.21'
 PORT = 65000        # Port to listen on (non-privileged ports are > 1023)
 
 
-wlm = WavelengthMeter(debug=True)
+wlm = WavelengthMeter(debug=False)
 
 # 최대 클라이언트 수 제한
 MAX_CLIENTS = 2
@@ -48,13 +49,15 @@ def handle_client(client_socket, address):
             print(f"Wavelength at channel {channel}: {wavelength:.6f} nm")
             
             # get wavelength meter value by channel
-            client_socket.sendall(str(wlm.wavelengths[i]).encode('utf-8'))
+            client_socket.sendall(str(wlm.wavelengths[channel]).encode('utf-8'))
             
     except ConnectionResetError:
         print(f"Connection with {address} lost")
     except KeyboardInterrupt:
         print('Exit by Keyboard Interrupt')
         exit()
+    except Exception as e:
+        print(f"Error with {address}: {e}")
     finally:
         with client_lock:
             if address in connected_clients:
@@ -68,16 +71,17 @@ def start_server():
     server.listen(MAX_CLIENTS)  # Listen for up to 5 connections
     print(f"Server started on {HOST}:{PORT}")
 
-    while True:
-        client_socket = None
-        try :
+    try:
+        while True:
+            # client_socket = None
             client_socket, client_address = server.accept()
             client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
             client_thread.start()
-        except KeyboardInterrupt:
-            if client_socket: 
-                client_socket.close()
-            break  
+    except KeyboardInterrupt:
+        print("Server is shutting down...")
+    finally:
+        server.close()
+        print("Server stopped.")
 
 if __name__ == "__main__":
     start_server()

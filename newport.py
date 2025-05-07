@@ -49,18 +49,30 @@ class newport:
     self.tlb.OpenDevices(self.ProductID, True)
     wlmeter = WavelengthMeter()"""
 
-    def __init__(self, id = int, key = str):
+    def __init__(self, id = int, key = str, debug = False):
         super(newport, self).__init__()
+        self.debug = debug          # 디버그 모드
+
         try:
             self._dev = Newport.USBComm.USB()   # Neport 장치와의 실제 통신 핸들
         except Exception as err:
             print(err)
             self._dev = None
+            self.debug = True
+        
+        if not self.debug:
+            from System.Text import StringBuilder
+            self.answer = StringBuilder(64)
+            self._buff = StringBuilder(64)
+        else:
+            self.answer = ""
+            self._buff = ""
+
         # Laser state
         self._open = False
         self._DeviceKey = key               # 장치 고유 식별자
         self._idLaser = id                  # 장치 고유 식별자
-        self.answer = StringBuilder(64)     
+        # self.answer = StringBuilder(64)
         self.Device_config = "newport"
         # Laser properties
         self._lbd = "0"                     # 레이저 제어 관련 내부 변수
@@ -75,7 +87,7 @@ class newport:
         self._no_error = '0,"NO ERROR"'
         self._haserr = False
         # Miscs
-        self._buff = StringBuilder(64)
+        # self._buff = StringBuilder(64)
         self._err_msg = ""
         self.connected = True
 
@@ -108,10 +120,24 @@ class newport:
         self.lbd_value = lbd_value
 
     def Query(self, word):
-        self._buff.Clear()
-        self._dev.Query(self._DeviceKey, word, self._buff)
-        # print(self._DeviceKey, word , self._buff)
-        return self._buff.ToString()
+        if self.debug or self._dev is None:
+            # 디버그 모드용 가짜 응답
+            fake_responses = {
+                "SENSe:WAVElength?": "1550.123",
+                "OUTPut:STATe?": "1",
+                "SOUR:VOLT:PIEZ?": "50.0",
+                "*IDN?": "DEBUG-NEWPORT",
+                "*STB?": "0",
+                "ERRSTR?": "0,\"NO ERROR\""
+            }
+            response = fake_responses.get(word.strip(), "MOCK_RESPONSE")
+            print(f"[DEBUG][Query] {word.strip()} -> {response}")
+            return response
+        else:
+            self._buff.Clear()
+            self._dev.Query(self._DeviceKey, word, self._buff)
+            # print(self._DeviceKey, word , self._buff)
+            return self._buff.ToString()
 
     # -- Properties --
     # ---------------------------------------------------------
@@ -124,6 +150,10 @@ class newport:
     # @Catch.error
     def connected(self, value):     # 자동 연결(장치 연결을 시도하고, 버퍼를 비우며 초기 상태 확인 후 연결 완료 여부 출력)
         if value:
+            if self.debug:
+                print(f"[DEBUG] 디바이스 없이 연결된 것으로 간주합니다.")
+                self._open = True
+                return  # 💥 실제 연결 로직 실행하지 않음
             if self._DeviceKey:
                 # try:
                 out = self._dev.OpenDevices(self._idLaser, True)
@@ -173,7 +203,10 @@ class newport:
     def lbd(self):
         word = "SENSe:WAVElength?"
         self._lbd = self.Query(word)
-        print("read wavelength")
+        if self.debug:
+            print("[DEBUG] read wavelength")
+        else:
+            print("read wavelength")
         # print(self._lbd)
         return self._lbd
 
@@ -200,7 +233,10 @@ class newport:
         self.Query("OUTP:TRACK 1")
         word = "SOURCE:WAVE {}".format(value)
         self.Query(word)
-        print("write wavelength")
+        if self.debug:
+            print(f"[DEBUG] write wavelength {value}")
+        else:
+            print(f"write wavelength {value}")
         self._lbd = value
 
     @property

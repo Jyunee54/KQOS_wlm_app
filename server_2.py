@@ -13,12 +13,13 @@ HOST = '0.0.0.0'  # Localhost
 PORT = 65000        # Port to listen on (non-privileged ports are > 1023)
 
 # 디버그 모드로 실행 중
-wlm = WavelengthMeter(debug=True)
+DEBUG=True
+wlm = WavelengthMeter(debug=DEBUG)
 # laser = newport(id = NEWPORT_ID, key = NEWPORT_KEY) # Newport 레이저 초기화
 
 # Newpor 장치 매니저 초기화
 device_keys = [NEWPORT_KEY]
-newport_manager = NewportDeviceManager(device_keys=device_keys)
+newport_manager = NewportDeviceManager(device_keys=device_keys, debug=DEBUG)
 
 newport_lock = threading.Lock()
 
@@ -81,6 +82,8 @@ def handle_client(client_socket, address):
         
         connected_clients.append(address)
         print(f"Accepted connection from {address} (current: {len(connected_clients)})")
+        success_message = {"message": "Connected to server"}
+        client_socket.sendall(json.dumps(success_message).encode())
 
     # print(f"New connection from {address}")
     try:

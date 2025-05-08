@@ -41,20 +41,33 @@ class NewportDeviceManager:
 
     def use_device(self, device_key, action):
         """장치 사용 함수: 다른 클라이언트가 사용 중이면 대기"""
+        print("use_device 실행 중")
         if device_key in self.device_keys:
+            print(f"device_key: {device_key}")
             with self.locks[device_key]:  # 장치 사용을 위한 락 획득
+                
                 if self.debug:
                     print(f"[DEBUG] {device_key} 디버그 모드로 연결 시도합니다.")
                     self.connect_device(device_key)
                     device = self.devices[device_key]
                     action(device)
-                elif device and device.connected:
-                    device = self.devices[device_key]
-                    print(f"{device_key} 장치 사용 시작")
-                    action(device)  # 실제 장치에서 원하는 작업 실행
-                    print(f"{device_key} 장치 사용 완료")
                 else:
-                    print(f"{device_key} 장치가 연결되지 않았습니다.")
+                    self.connect_device(device_key)
+                    device = self.devices[device_key]
+
+                    if not device.connected:
+                        print(f"{device_key} 장치가 연결되지 않아 연결 시도합니다.")
+                        self.connect_device(device_key)
+                        device = self.devices[device_key]
+                    
+                    if device and device.connected:
+                        print(device)
+                        device = self.devices[device_key]
+                        print(f"{device_key} 장치 사용 시작")
+                        action(device)  # 실제 장치에서 원하는 작업 실행
+                        print(f"{device_key} 장치 사용 완료")
+                    else:
+                        print(f"{device_key} 장치가 연결되지 않았습니다.")
         else:
             print(f"{device_key}는 지원되지 않는 장치입니다.")
 

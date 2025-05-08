@@ -17,7 +17,7 @@ import sys
 # import ipdb
 import numpy as np
 import time
-# import clr
+import clr
 from datetime import datetime
 import pyvisa
 # import matplotlib.pyplot as plt
@@ -25,15 +25,15 @@ from time import sleep
 import logging
 
 # from clr import System
-# from System.Text import StringBuilder
-# from System import Int32
-# from System.Reflection import Assembly
+from System.Text import StringBuilder
+from System import Int32
+from System.Reflection import Assembly
 
 # from wlm import WavelengthMeter
 sys.path.append(
     "C:\\Program Files\\New Focus\\New Focus Tunable Laser Application\\Bin"
 )
-# clr.AddReference("UsbDllWrap")
+clr.AddReference("UsbDllWrap")
 # import Newport
 
 ProductID = 4106
